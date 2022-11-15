@@ -1,0 +1,154 @@
+{
+	"name": "az_v_adf1_folder_pipeline",
+	"properties": {
+		"activities": [
+			{
+				"name": "Get Everything from folder",
+				"type": "GetMetadata",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataset": {
+						"referenceName": "az_v_source_ALL_files_ds",
+						"type": "DatasetReference",
+						"parameters": {
+							"FolderName": {
+								"value": "@pipeline().parameters.FolderName",
+								"type": "Expression"
+							}
+						}
+					},
+					"fieldList": [
+						"childItems"
+					],
+					"storeSettings": {
+						"type": "AzureBlobStorageReadSettings",
+						"recursive": true,
+						"enablePartitionDiscovery": false
+					},
+					"formatSettings": {
+						"type": "JsonReadSettings"
+					}
+				}
+			},
+			{
+				"name": "Keep only proper files",
+				"type": "Filter",
+				"dependsOn": [
+					{
+						"activity": "Get Everything from folder",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('Get Everything from folder').output.childItems",
+						"type": "Expression"
+					},
+					"condition": {
+						"value": "@and(\n    equals(item().type,'File')\n    , \n    and(\n        endswith(item().name,'.json')\n        ,\n        and(\n            startswith(item().name,'feed')\n            ,\n            greater(indexOf(item().name,'tool'),-1)\n            )\n        )\n    )",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "For Every File",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "Keep only proper files",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('Keep only proper files').output.value",
+						"type": "Expression"
+					},
+					"activities": [
+						{
+							"name": "Copy file",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "JsonSource",
+									"storeSettings": {
+										"type": "AzureBlobStorageReadSettings",
+										"recursive": false,
+										"enablePartitionDiscovery": false
+									},
+									"formatSettings": {
+										"type": "JsonReadSettings"
+									}
+								},
+								"sink": {
+									"type": "ParquetSink",
+									"storeSettings": {
+										"type": "AzureBlobStorageWriteSettings"
+									},
+									"formatSettings": {
+										"type": "ParquetWriteSettings"
+									}
+								},
+								"enableStaging": false
+							},
+							"inputs": [
+								{
+									"referenceName": "az_v_source_ONE_file_ds",
+									"type": "DatasetReference",
+									"parameters": {
+										"FolderName": "@pipeline().parameters.FolderName",
+										"FileName": "@item().name"
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "az_v_destination_ONE_file_parguet",
+									"type": "DatasetReference",
+									"parameters": {
+										"FolderName": "@pipeline().parameters.FolderName",
+										"FileName": {
+											"value": "@replace(item().name,'.json','.parquet')",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"FolderName": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2022-11-15T11:30:42Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}
