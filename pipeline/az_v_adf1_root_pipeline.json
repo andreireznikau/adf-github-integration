@@ -17,7 +17,13 @@
 				"typeProperties": {
 					"dataset": {
 						"referenceName": "az_v_source_ALL_folders_ds",
-						"type": "DatasetReference"
+						"type": "DatasetReference",
+						"parameters": {
+							"SourceName": {
+								"value": "@pipeline().parameters.source_storage_name",
+								"type": "Expression"
+							}
+						}
 					},
 					"fieldList": [
 						"childItems"
@@ -66,6 +72,14 @@
 									"FolderName": {
 										"value": "@item().name",
 										"type": "Expression"
+									},
+									"DestinationName": {
+										"value": "@pipeline().parameters.destination_storage_name",
+										"type": "Expression"
+									},
+									"SourceName": {
+										"value": "@pipeline().parameters.source_storage_name",
+										"type": "Expression"
 									}
 								}
 							}
@@ -97,8 +111,16 @@
 				}
 			}
 		],
+		"parameters": {
+			"source_storage_name": {
+				"type": "string"
+			},
+			"destination_storage_name": {
+				"type": "string"
+			}
+		},
 		"annotations": [],
-		"lastPublishTime": "2022-11-15T11:30:44Z"
+		"lastPublishTime": "2022-11-15T19:20:59Z"
 	},
 	"type": "Microsoft.DataFactory/factories/pipelines"
 }

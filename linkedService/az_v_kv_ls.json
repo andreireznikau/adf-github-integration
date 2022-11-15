@@ -1,0 +1,11 @@
+{
+	"name": "az_v_kv_ls",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"annotations": [],
+		"type": "AzureKeyVault",
+		"typeProperties": {
+			"baseUrl": "https://az-v-kv.vault.azure.net/"
+		}
+	}
+}

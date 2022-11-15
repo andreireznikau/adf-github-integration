@@ -1,5 +1,5 @@
 {
-	"name": "az_v_source_ALL_folders_ds",
+	"name": "az_v_source_ONE_file_json",
 	"properties": {
 		"linkedServiceName": {
 			"referenceName": "az_v_source_ls_feed",
@@ -12,6 +12,12 @@
 			}
 		},
 		"parameters": {
+			"FolderName": {
+				"type": "string"
+			},
+			"FileName": {
+				"type": "string"
+			},
 			"SourceName": {
 				"type": "string"
 			}
@@ -21,23 +27,18 @@
 		"typeProperties": {
 			"location": {
 				"type": "AzureBlobStorageLocation",
+				"fileName": {
+					"value": "@dataset().FileName",
+					"type": "Expression"
+				},
+				"folderPath": {
+					"value": "@dataset().FolderName",
+					"type": "Expression"
+				},
 				"container": "az-v-source-adf1"
 			}
 		},
-		"schema": {
-			"type": "object",
-			"properties": {
-				"name": {
-					"type": "string"
-				},
-				"date": {
-					"type": "string"
-				},
-				"value": {
-					"type": "number"
-				}
-			}
-		}
+		"schema": {}
 	},
 	"type": "Microsoft.DataFactory/factories/datasets"
 }

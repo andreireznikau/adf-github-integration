@@ -22,6 +22,10 @@
 							"FolderName": {
 								"value": "@pipeline().parameters.FolderName",
 								"type": "Expression"
+							},
+							"SourceName": {
+								"value": "@pipeline().parameters.SourceName",
+								"type": "Expression"
 							}
 						}
 					},
@@ -116,11 +120,15 @@
 							},
 							"inputs": [
 								{
-									"referenceName": "az_v_source_ONE_file_ds",
+									"referenceName": "az_v_source_ONE_file_json",
 									"type": "DatasetReference",
 									"parameters": {
 										"FolderName": "@pipeline().parameters.FolderName",
-										"FileName": "@item().name"
+										"FileName": "@item().name",
+										"SourceName": {
+											"value": "@pipeline().parameters.SourceName",
+											"type": "Expression"
+										}
 									}
 								}
 							],
@@ -132,6 +140,10 @@
 										"FolderName": "@pipeline().parameters.FolderName",
 										"FileName": {
 											"value": "@replace(item().name,'.json','.parquet')",
+											"type": "Expression"
+										},
+										"destination_storage_name": {
+											"value": "@pipeline().parameters.DestinationName",
 											"type": "Expression"
 										}
 									}
@@ -145,10 +157,16 @@
 		"parameters": {
 			"FolderName": {
 				"type": "string"
+			},
+			"DestinationName": {
+				"type": "string"
+			},
+			"SourceName": {
+				"type": "string"
 			}
 		},
 		"annotations": [],
-		"lastPublishTime": "2022-11-15T11:30:42Z"
+		"lastPublishTime": "2022-11-15T19:19:12Z"
 	},
 	"type": "Microsoft.DataFactory/factories/pipelines"
 }
