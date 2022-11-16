@@ -1,0 +1,640 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "az-v-ADF1"
+		},
+		"az_v_destinaion_ls_feed_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'az_v_destinaion_ls_feed'"
+		},
+		"az_v_source_ls_feed_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'az_v_source_ls_feed'"
+		},
+		"az_v_kv_ls_properties_typeProperties_baseUrl": {
+			"type": "string",
+			"defaultValue": "https://az-v-kv.vault.azure.net/"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/az_v_kv_ls')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureKeyVault",
+				"typeProperties": {
+					"baseUrl": "[parameters('az_v_kv_ls_properties_typeProperties_baseUrl')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/az_v_destinaion_ls_feed')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"parameters": {
+					"destination_storage_name": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "AzureBlobStorage",
+				"typeProperties": {
+					"connectionString": "[parameters('az_v_destinaion_ls_feed_connectionString')]",
+					"accountKey": {
+						"type": "AzureKeyVaultSecret",
+						"store": {
+							"referenceName": "az_v_kv_ls",
+							"type": "LinkedServiceReference"
+						},
+						"secretName": "az-v-secret1",
+						"secretVersion": "f1f3d270f797456b937188056e6efeb1"
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/az_v_kv_ls')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/az_v_source_ls_feed')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"parameters": {
+					"source_storage_name": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "AzureBlobStorage",
+				"typeProperties": {
+					"connectionString": "[parameters('az_v_source_ls_feed_connectionString')]",
+					"accountKey": {
+						"type": "AzureKeyVaultSecret",
+						"store": {
+							"referenceName": "az_v_kv_ls",
+							"type": "LinkedServiceReference"
+						},
+						"secretName": "az-v-secret1",
+						"secretVersion": "f1f3d270f797456b937188056e6efeb1"
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/az_v_kv_ls')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/az_v_destination_ONE_file_parguet')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "az_v_destinaion_ls_feed",
+					"type": "LinkedServiceReference",
+					"parameters": {
+						"destination_storage_name": {
+							"value": "@dataset().destination_storage_name",
+							"type": "Expression"
+						}
+					}
+				},
+				"parameters": {
+					"FolderName": {
+						"type": "string"
+					},
+					"FileName": {
+						"type": "string"
+					},
+					"destination_storage_name": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "Parquet",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"fileName": {
+							"value": "@dataset().FileName",
+							"type": "Expression"
+						},
+						"folderPath": {
+							"value": "@dataset().FolderName",
+							"type": "Expression"
+						},
+						"container": "az-v-destination-adf1"
+					},
+					"compressionCodec": "snappy"
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/az_v_destinaion_ls_feed')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/az_v_source_ALL_files_ds')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "az_v_source_ls_feed",
+					"type": "LinkedServiceReference",
+					"parameters": {
+						"source_storage_name": {
+							"value": "@dataset().SourceName",
+							"type": "Expression"
+						}
+					}
+				},
+				"parameters": {
+					"FolderName": {
+						"type": "string"
+					},
+					"SourceName": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "Json",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"folderPath": {
+							"value": "@dataset().FolderName",
+							"type": "Expression"
+						},
+						"container": "az-v-source-adf1"
+					}
+				},
+				"schema": {}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/az_v_source_ls_feed')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/az_v_source_ALL_folders_ds')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "az_v_source_ls_feed",
+					"type": "LinkedServiceReference",
+					"parameters": {
+						"source_storage_name": {
+							"value": "@dataset().SourceName",
+							"type": "Expression"
+						}
+					}
+				},
+				"parameters": {
+					"SourceName": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "Json",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"container": "az-v-source-adf1"
+					}
+				},
+				"schema": {
+					"type": "object",
+					"properties": {
+						"name": {
+							"type": "string"
+						},
+						"date": {
+							"type": "string"
+						},
+						"value": {
+							"type": "number"
+						}
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/az_v_source_ls_feed')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/az_v_source_ONE_file_ds')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "az_v_source_ls_feed",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"FolderName": {
+						"type": "string"
+					},
+					"FileName": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "Json",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"fileName": {
+							"value": "@dataset().FileName",
+							"type": "Expression"
+						},
+						"folderPath": {
+							"value": "@dataset().FolderName",
+							"type": "Expression"
+						},
+						"container": "az-v-source-adf1"
+					}
+				},
+				"schema": {}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/az_v_source_ls_feed')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/az_v_source_ONE_file_json')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "az_v_source_ls_feed",
+					"type": "LinkedServiceReference",
+					"parameters": {
+						"source_storage_name": {
+							"value": "@dataset().SourceName",
+							"type": "Expression"
+						}
+					}
+				},
+				"parameters": {
+					"FolderName": {
+						"type": "string"
+					},
+					"FileName": {
+						"type": "string"
+					},
+					"SourceName": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "Json",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"fileName": {
+							"value": "@dataset().FileName",
+							"type": "Expression"
+						},
+						"folderPath": {
+							"value": "@dataset().FolderName",
+							"type": "Expression"
+						},
+						"container": "az-v-source-adf1"
+					}
+				},
+				"schema": {}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/az_v_source_ls_feed')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/az_v_adf1_folder_pipeline')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Get Everything from folder",
+						"type": "GetMetadata",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataset": {
+								"referenceName": "az_v_source_ALL_files_ds",
+								"type": "DatasetReference",
+								"parameters": {
+									"FolderName": {
+										"value": "@pipeline().parameters.FolderName",
+										"type": "Expression"
+									},
+									"SourceName": {
+										"value": "@pipeline().parameters.SourceName",
+										"type": "Expression"
+									}
+								}
+							},
+							"fieldList": [
+								"childItems"
+							],
+							"storeSettings": {
+								"type": "AzureBlobStorageReadSettings",
+								"recursive": true,
+								"enablePartitionDiscovery": false
+							},
+							"formatSettings": {
+								"type": "JsonReadSettings"
+							}
+						}
+					},
+					{
+						"name": "Keep only proper files",
+						"type": "Filter",
+						"dependsOn": [
+							{
+								"activity": "Get Everything from folder",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('Get Everything from folder').output.childItems",
+								"type": "Expression"
+							},
+							"condition": {
+								"value": "@and(\n    equals(item().type,'File')\n    , \n    and(\n        endswith(item().name,'.json')\n        ,\n        and(\n            startswith(item().name,'feed')\n            ,\n            greater(indexOf(item().name,'tool'),-1)\n            )\n        )\n    )",
+								"type": "Expression"
+							}
+						}
+					},
+					{
+						"name": "For Every File",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "Keep only proper files",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('Keep only proper files').output.value",
+								"type": "Expression"
+							},
+							"activities": [
+								{
+									"name": "Copy file",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "JsonSource",
+											"storeSettings": {
+												"type": "AzureBlobStorageReadSettings",
+												"recursive": false,
+												"enablePartitionDiscovery": false
+											},
+											"formatSettings": {
+												"type": "JsonReadSettings"
+											}
+										},
+										"sink": {
+											"type": "ParquetSink",
+											"storeSettings": {
+												"type": "AzureBlobStorageWriteSettings"
+											},
+											"formatSettings": {
+												"type": "ParquetWriteSettings"
+											}
+										},
+										"enableStaging": false
+									},
+									"inputs": [
+										{
+											"referenceName": "az_v_source_ONE_file_json",
+											"type": "DatasetReference",
+											"parameters": {
+												"FolderName": "@pipeline().parameters.FolderName",
+												"FileName": "@item().name",
+												"SourceName": {
+													"value": "@pipeline().parameters.SourceName",
+													"type": "Expression"
+												}
+											}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "az_v_destination_ONE_file_parguet",
+											"type": "DatasetReference",
+											"parameters": {
+												"FolderName": "@pipeline().parameters.FolderName",
+												"FileName": {
+													"value": "@replace(item().name,'.json','.parquet')",
+													"type": "Expression"
+												},
+												"destination_storage_name": {
+													"value": "@pipeline().parameters.DestinationName",
+													"type": "Expression"
+												}
+											}
+										}
+									]
+								}
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"parameters": {
+					"FolderName": {
+						"type": "string"
+					},
+					"DestinationName": {
+						"type": "string"
+					},
+					"SourceName": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"lastPublishTime": "2022-11-15T19:19:12Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/az_v_source_ALL_files_ds')]",
+				"[concat(variables('factoryId'), '/datasets/az_v_source_ONE_file_json')]",
+				"[concat(variables('factoryId'), '/datasets/az_v_destination_ONE_file_parguet')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/az_v_adf1_root_pipeline')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Get Everything from root of Container",
+						"type": "GetMetadata",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataset": {
+								"referenceName": "az_v_source_ALL_folders_ds",
+								"type": "DatasetReference",
+								"parameters": {
+									"SourceName": {
+										"value": "@pipeline().parameters.source_storage_name",
+										"type": "Expression"
+									}
+								}
+							},
+							"fieldList": [
+								"childItems"
+							],
+							"storeSettings": {
+								"type": "AzureBlobStorageReadSettings",
+								"recursive": true,
+								"enablePartitionDiscovery": false
+							},
+							"formatSettings": {
+								"type": "JsonReadSettings"
+							}
+						}
+					},
+					{
+						"name": "Process Every Each Folder",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "Keep Only Folders",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('Keep Only Folders').output.value",
+								"type": "Expression"
+							},
+							"isSequential": false,
+							"activities": [
+								{
+									"name": "Process Folder",
+									"type": "ExecutePipeline",
+									"dependsOn": [],
+									"userProperties": [],
+									"typeProperties": {
+										"pipeline": {
+											"referenceName": "az_v_adf1_folder_pipeline",
+											"type": "PipelineReference"
+										},
+										"waitOnCompletion": true,
+										"parameters": {
+											"FolderName": {
+												"value": "@item().name",
+												"type": "Expression"
+											},
+											"DestinationName": {
+												"value": "@pipeline().parameters.destination_storage_name",
+												"type": "Expression"
+											},
+											"SourceName": {
+												"value": "@pipeline().parameters.source_storage_name",
+												"type": "Expression"
+											}
+										}
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "Keep Only Folders",
+						"type": "Filter",
+						"dependsOn": [
+							{
+								"activity": "Get Everything from root of Container",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('Get Everything from root of Container').output.childItems",
+								"type": "Expression"
+							},
+							"condition": {
+								"value": "@equals(item().type,'Folder')",
+								"type": "Expression"
+							}
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"parameters": {
+					"source_storage_name": {
+						"type": "string"
+					},
+					"destination_storage_name": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"lastPublishTime": "2022-11-15T19:20:59Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/az_v_source_ALL_folders_ds')]",
+				"[concat(variables('factoryId'), '/pipelines/az_v_adf1_folder_pipeline')]"
+			]
+		}
+	]
+}

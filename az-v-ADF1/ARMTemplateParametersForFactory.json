@@ -1,0 +1,18 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"value": "az-v-ADF1"
+		},
+		"az_v_destinaion_ls_feed_connectionString": {
+			"value": ""
+		},
+		"az_v_source_ls_feed_connectionString": {
+			"value": ""
+		},
+		"az_v_kv_ls_properties_typeProperties_baseUrl": {
+			"value": "https://az-v-kv.vault.azure.net/"
+		}
+	}
+}
