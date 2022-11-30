@@ -1,5 +1,13 @@
 {
 	"name": "az-v-ADF1",
+	"properties": {
+		"globalParameters": {
+			"global_param_1": {
+				"type": "string",
+				"value": "global_param_value_1"
+			}
+		}
+	},
 	"location": "westeurope",
 	"identity": {
 		"type": "SystemAssigned",
